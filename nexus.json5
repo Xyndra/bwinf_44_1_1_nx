@@ -1,0 +1,7 @@
+{
+    mod: 'bwinf_44_1_1',
+    permissions: {
+        "compat.io": ['bwinf_44_1_1']
+    },
+    deps: []
+}

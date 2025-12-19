@@ -1,0 +1,220 @@
+use { println, readln } from compat.io
+
+// Struct to hold class information
+struct Class {
+    string name
+    string day
+    i64 start
+    i64 end
+    i64 students
+}
+
+// Parse a line into a Class struct
+std parse_class(string line): Class {
+    c parts = split(trim(line), " ")
+    c name = parts[@unchecked 0]
+    c day = parts[@unchecked 1]
+    c start = parse_i64(parts[@unchecked 2])
+    c end = parse_i64(parts[@unchecked 3])
+    c students = parse_i64(parts[@unchecked 4])
+    return Class { name: name, day: day, start: start, end: end, students: students }
+}
+
+// Check if two time ranges overlap
+std overlaps(i64 s1, i64 e1, i64 s2, i64 e2): bool {
+    // Ranges overlap if start1 < end2 AND start2 < end1
+    return and(lti64(s1, e2), lti64(s2, e1))
+}
+
+// Get day string from index
+std get_day(i64 idx): string {
+    if (eqi64(idx, 0)) {
+        return "Montag"
+    }
+    if (eqi64(idx, 1)) {
+        return "Dienstag"
+    }
+    if (eqi64(idx, 2)) {
+        return "Mittwoch"
+    }
+    if (eqi64(idx, 3)) {
+        return "Donnerstag"
+    }
+    return "Freitag"
+}
+
+compat main(): void {
+    // Read number of classes
+    c n_str = readln()
+    c n = parse_i64(n_str)
+
+    // Read all classes
+    m classes = [Class { name: "", day: "", start: 0, end: 0, students: 0 }]
+    // Remove the dummy element after we have the type
+    m dummy = pop(classes)
+    classes = dummy[@unchecked 0]
+
+    m i: i64 = 0
+    subscope read_loop {
+        if (gei64(i, n)) {
+            return
+        }
+        c line = readln()
+        c class_obj = parse_class(line)
+        classes = push(classes, class_obj)
+        i = addi64(i, 1)
+        goto read_loop
+    }
+
+    // For each day and each hour, count the students
+    m max_students: i64 = 0
+    m max_day: string = ""
+    m max_start: i64 = 0
+    m max_end: i64 = 0
+
+    // Iterate over all possible time slots (using hourly granularity from 0 to 24)
+    m day_idx: i64 = 0
+    subscope day_loop {
+        if (gei64(day_idx, 5)) {
+            return
+        }
+        c current_day = get_day(day_idx)
+
+        // Check each possible hour
+        m hour: i64 = 0
+        subscope hour_loop {
+            if (gei64(hour, 24)) {
+                return
+            }
+
+            // Count students in classes that cover this hour
+            m total: i64 = 0
+            m class_idx: i64 = 0
+            subscope count_loop {
+                if (gei64(class_idx, n)) {
+                    return
+                }
+                c cls = classes[@unchecked class_idx]
+                // Check if this class is on the current day and covers this hour
+                if (eqs(cls.day, current_day)) {
+                    // Class covers hour if start <= hour < end
+                    if (and(lei64(cls.start, hour), lti64(hour, cls.end))) {
+                        total = addi64(total, cls.students)
+                    }
+                }
+                class_idx = addi64(class_idx, 1)
+                goto count_loop
+            }
+
+            if (gti64(total, max_students)) {
+                max_students = total
+                max_day = current_day
+                max_start = hour
+                max_end = addi64(hour, 1)
+            }
+
+            hour = addi64(hour, 1)
+            goto hour_loop
+        }
+
+        day_idx = addi64(day_idx, 1)
+        goto day_loop
+    }
+
+    // Extend the time window as long as the SAME classes are present
+    // First, collect which classes are in the max hour
+    m extended_start = max_start
+    m extended_end = max_end
+
+    // Try to extend backwards
+    subscope extend_back {
+        if (lei64(extended_start, 0)) {
+            return
+        }
+        c prev_hour = subi64(extended_start, 1)
+
+        // Check if all classes that overlap with max_start also overlap with prev_hour
+        m all_present = true
+        m check_idx: i64 = 0
+        subscope check_back {
+            if (gei64(check_idx, n)) {
+                return
+            }
+            c cls = classes[@unchecked check_idx]
+            if (eqs(cls.day, max_day)) {
+                // If this class overlaps with max_start hour
+                if (and(lei64(cls.start, max_start), lti64(max_start, cls.end))) {
+                    // Check if it also overlaps with prev_hour
+                    if (not(and(lei64(cls.start, prev_hour), lti64(prev_hour, cls.end)))) {
+                        all_present = false
+                    }
+                }
+            }
+            check_idx = addi64(check_idx, 1)
+            goto check_back
+        }
+
+        if (all_present) {
+            extended_start = prev_hour
+            goto extend_back
+        }
+        return
+    }
+
+    // Try to extend forwards
+    subscope extend_forward {
+        if (gei64(extended_end, 24)) {
+            return
+        }
+        c next_hour = extended_end
+
+        // Check if all classes that overlap with max_start also overlap with next_hour
+        m all_present = true
+        m check_idx: i64 = 0
+        subscope check_fwd {
+            if (gei64(check_idx, n)) {
+                return
+            }
+            c cls = classes[@unchecked check_idx]
+            if (eqs(cls.day, max_day)) {
+                // If this class overlaps with max_start hour
+                if (and(lei64(cls.start, max_start), lti64(max_start, cls.end))) {
+                    // Check if it also overlaps with next_hour
+                    if (not(and(lei64(cls.start, next_hour), lti64(next_hour, cls.end)))) {
+                        all_present = false
+                    }
+                }
+            }
+            check_idx = addi64(check_idx, 1)
+            goto check_fwd
+        }
+
+        if (all_present) {
+            extended_end = addi64(extended_end, 1)
+            goto extend_forward
+        }
+        return
+    }
+
+    // Output the result
+    println("Maximum number of students in one room at the same time:", max_students)
+    println("One time this happens is on", max_day, "from", extended_start, "to", extended_end, "o'clock")
+    println("The classes in this time slot are:")
+
+    // Print all classes in the max time slot
+    m print_idx: i64 = 0
+    subscope print_loop {
+        if (gei64(print_idx, n)) {
+            return
+        }
+        c cls = classes[@unchecked print_idx]
+        if (eqs(cls.day, max_day)) {
+            // Check if class overlaps with our time slot
+            if (overlaps(cls.start, cls.end, extended_start, extended_end)) {
+                println("-", cls.name, "with", cls.students, "students")
+            }
+        }
+        print_idx = addi64(print_idx, 1)
+        goto print_loop
+    }
+}
