@@ -1,7 +1,9 @@
 {
     mod: 'bwinf_44_1_1',
     permissions: {
-        "compat.io": ['bwinf_44_1_1']
+        "compat.io": ['bwinf_44_1_1'],
+        "compat.fs": ['bwinf_44_1_1'],
+        "compat.proc": ['bwinf_44_1_1']
     },
     deps: []
 }

@@ -1,0 +1,121 @@
+use { sort_i64, unique_i64 } from std.collections
+
+// Struct to hold intersection information
+struct Intersection {
+    i64 start = 0
+    i64 end = 0
+    [dyn]rune day = ""
+    [dyn]Class classes = []
+}
+
+// Find all intersections across all days
+std find_intersections([dyn]Class classes): [dyn]Intersection {
+    // Separate classes by day (collect unique days and group classes)
+    m days: [dyn][dyn]rune = []
+    m classes_by_day: [dyn][dyn]Class = []
+
+    // Group classes by day
+    m ci: i64 = 0
+    c n = len(classes)
+    subscope group_by_day {
+        if (gei64(ci, n)) {
+            return
+        }
+        c cls = classes[ci]
+
+        // Find if this day already exists
+        m day_idx: i64 = 0
+        m found = false
+        subscope find_day {
+            if (gei64(day_idx, len(days))) {
+                return
+            }
+            if (eqs(cls.day, days[day_idx])) {
+                classes_by_day[day_idx] = push(classes_by_day[day_idx], cls)
+                found = true
+                return
+            }
+            day_idx = addi64(day_idx, 1)
+            goto find_day
+        }
+
+        // If day not found, add new day
+        if (not(found)) {
+            days = push(days, cls.day)
+            classes_by_day = push(classes_by_day, [cls])
+        }
+
+        ci = addi64(ci, 1)
+        goto group_by_day
+    }
+
+    m intersections = []
+
+    // Process each day
+    m day_i: i64 = 0
+    subscope process_days {
+        if (gei64(day_i, len(days))) {
+            return
+        }
+        c day: [dyn]rune = days[day_i]
+        c day_classes: [dyn]Class = classes_by_day[day_i]
+
+        // Collect all time points for this day
+        m time_points = []
+        m i: i64 = 0
+        subscope collect_times {
+            if (gei64(i, len(day_classes))) {
+                return
+            }
+            c cls = day_classes[i]
+            time_points = push(time_points, cls.start)
+            time_points = push(time_points, cls.end)
+            i = addi64(i, 1)
+            goto collect_times
+        }
+
+        // Sort and remove duplicates
+        c time_points_arr = sort_i64(unique_i64(time_points))
+
+        // Build intersections for each time slot
+        m ti: i64 = 0
+        subscope build_intersections {
+            if (gei64(addi64(ti, 1), len(time_points_arr))) {
+                return
+            }
+            c start = time_points_arr[ti]
+            c end = time_points_arr[addi64(ti, 1)]
+
+            // Find overlapping classes
+            m overlapping_classes = []
+            m oci: i64 = 0
+            subscope find_overlapping {
+                if (gei64(oci, len(day_classes))) {
+                    return
+                }
+                c cls = day_classes[oci]
+                if (and(lei64(cls.start, start), gei64(cls.end, end))) {
+                    overlapping_classes = push(overlapping_classes, cls)
+                }
+                oci = addi64(oci, 1)
+                goto find_overlapping
+            }
+
+            c intersection = Intersection {
+                start: start,
+                end: end,
+                day: day,
+                classes: overlapping_classes
+            }
+            intersections = push(intersections, intersection)
+
+            ti = addi64(ti, 1)
+            goto build_intersections
+        }
+
+        day_i = addi64(day_i, 1)
+        goto process_days
+    }
+
+    return intersections
+}

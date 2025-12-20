@@ -1,0 +1,47 @@
+use { read_file } from compat.fs
+
+// Struct to hold class information
+struct Class {
+    [dyn]rune identifier
+    [dyn]rune day
+    i64 start
+    i64 end
+    i64 size
+}
+
+// Parse a line into a Class struct
+std parse_class([dyn]rune line): Class {
+    c parts = split(trim(line), " ")
+    c identifier = parts[0]
+    c day = parts[1]
+    c start = parse_i64(parts[2])
+    c end = parse_i64(parts[3])
+    c size = parse_i64(parts[4])
+    return Class { identifier: identifier, day: day, start: start, end: end, size: size }
+}
+
+// Parse a file and return an array of classes
+compat parse_file([dyn]rune file_path): [dyn]Class {
+    c content = read_file(file_path)
+    c lines = split(content, "\n")
+
+    m classes = []
+
+    // Skip first line (count) and parse the rest
+    m i: i64 = 1
+    c n = len(lines)
+    subscope parse_loop {
+        if (gei64(i, n)) {
+            return
+        }
+        c line = trim(lines[i])
+        if (not(is_empty(line))) {
+            c class_obj = parse_class(line)
+            classes = push(classes, class_obj)
+        }
+        i = addi64(i, 1)
+        goto parse_loop
+    }
+
+    return classes
+}
