@@ -1,4 +1,6 @@
-use { sort_i64, unique_i64 } from std.collections
+use { sort_i64 } from std.collections
+use { SetI64, set_i64_new, set_i64_add, set_i64_array } from std.collections.sets
+use { define_map } from std.collections.generics
 
 // Struct to hold intersection information
 struct Intersection {
@@ -8,13 +10,14 @@ struct Intersection {
     [dyn]Class classes = []
 }
 
+// Generate map from string to array of classes
+$define_map("String", "[dyn]rune", "eqs", "Classes", "[dyn]Class", "[]")
+
 // Find all intersections across all days
 std find_intersections([dyn]Class classes): [dyn]Intersection {
-    // Separate classes by day (collect unique days and group classes)
-    m days: [dyn][dyn]rune = []
-    m classes_by_day: [dyn][dyn]Class = []
+    // Separate classes by day using map
+    m classes_by_day = map_string_classes_new()
 
-    // Group classes by day
     m ci: i64 = 0
     c n = len(classes)
     subscope group_by_day {
@@ -22,28 +25,11 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
             return
         }
         c cls = classes[ci]
+        c day = cls.day
 
-        // Find if this day already exists
-        m day_idx: i64 = 0
-        m found = false
-        subscope find_day {
-            if (gei64(day_idx, len(days))) {
-                return
-            }
-            if (eqs(cls.day, days[day_idx])) {
-                classes_by_day[day_idx] = push(classes_by_day[day_idx], cls)
-                found = true
-                return
-            }
-            day_idx = addi64(day_idx, 1)
-            goto find_day
-        }
-
-        // If day not found, add new day
-        if (not(found)) {
-            days = push(days, cls.day)
-            classes_by_day = push(classes_by_day, [cls])
-        }
+        // Get existing classes for this day, append new one, and set back
+        c existing = map_string_classes_get(classes_by_day, day)
+        classes_by_day = map_string_classes_set(classes_by_day, day, push(existing, cls))
 
         ci = addi64(ci, 1)
         goto group_by_day
@@ -52,30 +38,31 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
     m intersections = []
 
     // Process each day
+    c days = map_string_classes_keys(classes_by_day)
     m day_i: i64 = 0
     subscope process_days {
         if (gei64(day_i, len(days))) {
             return
         }
-        c day: [dyn]rune = days[day_i]
-        c day_classes: [dyn]Class = classes_by_day[day_i]
+        c day = days[day_i]
+        c day_classes = map_string_classes_get(classes_by_day, day)
 
-        // Collect all time points for this day
-        m time_points = []
+        // Collect all time points for this day using a set
+        m time_points_set = set_i64_new()
         m i: i64 = 0
         subscope collect_times {
             if (gei64(i, len(day_classes))) {
                 return
             }
             c cls = day_classes[i]
-            time_points = push(time_points, cls.start)
-            time_points = push(time_points, cls.end)
+            time_points_set = set_i64_add(time_points_set, cls.start)
+            time_points_set = set_i64_add(time_points_set, cls.end)
             i = addi64(i, 1)
             goto collect_times
         }
 
-        // Sort and remove duplicates
-        c time_points_arr = sort_i64(unique_i64(time_points))
+        // Get sorted time points array
+        c time_points_arr = sort_i64(set_i64_array(time_points_set))
 
         // Build intersections for each time slot
         m ti: i64 = 0
