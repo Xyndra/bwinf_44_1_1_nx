@@ -22,7 +22,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
     c n = len(classes)
     subscope group_by_day {
         if (gei64(ci, n)) {
-            return
+            exit group_by_day
         }
         c cls = classes[ci]
         c day = cls.day
@@ -42,7 +42,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
     m day_i: i64 = 0
     subscope process_days {
         if (gei64(day_i, len(days))) {
-            return
+            exit process_days
         }
         c day = days[day_i]
         c day_classes = map_string_classes_get(classes_by_day, day)
@@ -52,7 +52,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
         m i: i64 = 0
         subscope collect_times {
             if (gei64(i, len(day_classes))) {
-                return
+                exit collect_times
             }
             c cls = day_classes[i]
             time_points_set = set_i64_add(time_points_set, cls.start)
@@ -68,7 +68,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
         m ti: i64 = 0
         subscope build_intersections {
             if (gei64(addi64(ti, 1), len(time_points_arr))) {
-                return
+                exit build_intersections
             }
             c start = time_points_arr[ti]
             c end = time_points_arr[addi64(ti, 1)]
@@ -78,7 +78,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
             m oci: i64 = 0
             subscope find_overlapping {
                 if (gei64(oci, len(day_classes))) {
-                    return
+                    exit find_overlapping
                 }
                 c cls = day_classes[oci]
                 if (and(lei64(cls.start, start), gei64(cls.end, end))) {

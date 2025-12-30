@@ -32,7 +32,7 @@ compat parse_file([dyn]rune file_path): [dyn]Class {
     c n = len(lines)
     subscope parse_loop {
         if (gei64(i, n)) {
-            return
+            exit parse_loop
         }
         c line = trim(lines[i])
         if (not(is_empty(line))) {

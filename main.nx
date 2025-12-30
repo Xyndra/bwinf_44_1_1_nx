@@ -8,7 +8,7 @@ std count_students(Intersection intersection): i64 {
     c n = len(intersection.classes)
     subscope count_loop {
         if (gei64(i, n)) {
-            return
+            exit count_loop
         }
         c cls = intersection.classes[i]
         total = addi64(total, cls.size)
@@ -42,7 +42,7 @@ compat main(): void {
     c n = len(intersections)
     subscope find_max {
         if (gei64(i, n)) {
-            return
+            exit find_max
         }
         c intersection = intersections[i]
         c count = count_students(intersection)
@@ -64,7 +64,7 @@ compat main(): void {
     c class_count = len(max_intersection.classes)
     subscope print_classes {
         if (gei64(j, class_count)) {
-            return
+            exit print_classes
         }
         c cls = max_intersection.classes[j]
         println("-", cls.identifier, "with", cls.size, "students")
