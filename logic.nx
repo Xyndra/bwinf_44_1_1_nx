@@ -35,7 +35,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
         goto group_by_day
     }
 
-    m intersections = []
+    m intersections: [dyn]Intersection = []
 
     // Process each day
     c days = map_string_classes_keys(classes_by_day)
@@ -74,7 +74,7 @@ std find_intersections([dyn]Class classes): [dyn]Intersection {
             c end = time_points_arr[addi64(ti, 1)]
 
             // Find overlapping classes
-            m overlapping_classes = []
+            m overlapping_classes: [dyn]Class = []
             m oci: i64 = 0
             subscope find_overlapping {
                 if (gei64(oci, len(day_classes))) {

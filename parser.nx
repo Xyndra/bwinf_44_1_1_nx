@@ -25,7 +25,7 @@ compat parse_file([dyn]rune file_path): [dyn]Class {
     c content = read_file(file_path)
     c lines = split(content, "\n")
 
-    m classes = []
+    m classes: [dyn]Class = []
 
     // Skip first line (count) and parse the rest
     m i: i64 = 1
